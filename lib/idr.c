@@ -298,7 +298,7 @@ void *idr_replace(struct idr *idr, void *ptr, unsigned long id)
 	if (!slot || radix_tree_tag_get(&idr->idr_rt, id, IDR_FREE))
 		return ERR_PTR(-ENOENT);
 
-	__radix_tree_replace(&idr->idr_rt, node, slot, ptr, NULL);
+	__radix_tree_replace(&idr->idr_rt, node, slot, ptr);
 
 	return entry;
 }
@@ -360,7 +360,7 @@ EXPORT_SYMBOL(idr_replace);
  * RCU head in the bitmap, which adds a 2-pointer overhead to each 128-byte
  * bitmap, which is excessive.
  */
- 
+
 /**
  * ida_alloc_range() - Allocate an unused ID.
  * @ida: IDA handle.
