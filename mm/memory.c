@@ -2856,12 +2856,29 @@ static void lru_gen_exit_fault(void)
 {
 	current->in_lru_fault = false;
 }
+
+static void lru_gen_swap_refault(struct page *page, swp_entry_t entry)
+{
+	void *item;
+	struct address_space *mapping = swap_address_space(entry);
+	pgoff_t index = swp_offset(entry);
+
+	if (!lru_gen_enabled())
+		return;
+
+	item = xa_load(&mapping->i_pages, index);
+	if (xa_is_value(item))
+		lru_gen_refault(page, item);
+}
 #else
 static void lru_gen_enter_fault(struct vm_area_struct *vma)
 {
 }
 
 static void lru_gen_exit_fault(void)
+{
+}
+static void lru_gen_swap_refault(struct page *page, swp_entry_t entry)
 {
 }
 #endif /* CONFIG_LRU_GEN */
@@ -2938,6 +2955,7 @@ vm_fault_t do_swap_page(struct vm_fault *vmf)
 				__SetPageLocked(page);
 				__SetPageSwapBacked(page);
 				set_page_private(page, entry.val);
+				lru_gen_swap_refault(page, entry);
 				lru_cache_add_anon(page);
 				swap_readpage(page, true);
 			}
