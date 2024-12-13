@@ -1384,6 +1384,9 @@ static void dwc3_get_properties(struct dwc3 *dwc)
 	device_property_read_u32(dev, "snps,gen2-tx-de-emph3",
 			&dwc->gen2_tx_de_emph3);
 
+    dwc->dis_split_quirk = device_property_read_bool(dev,
+				"snps,dis-split-quirk");	
+
 	dwc->lpm_nyet_threshold = lpm_nyet_threshold;
 	dwc->tx_de_emphasis = tx_de_emphasis;
 
