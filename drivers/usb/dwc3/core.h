@@ -1125,7 +1125,6 @@ struct dwc3_scratchpad_array {
  * 	2	- No de-emphasis
  * 	3	- Reserved
  * @dis_metastability_quirk: set to disable metastability quirk.
-<<<<<<< HEAD
  * @err_evt_seen: previous event in queue was erratic error
  * @usb3_u1u2_disable: if true, disable U1U2 low power modes in Superspeed mode
  * @in_lpm: indicates if controller is in low power mode (no clocks)
@@ -1136,9 +1135,7 @@ struct dwc3_scratchpad_array {
  * @irq_dbg_index: index for capturing IRQ stats
  * @wait_linkstate: waitqueue for waiting LINK to move into required state
  * @vbus_draw: current to be drawn from USB
-=======
  * @dis_split_quirk: set to disable split boundary.
->>>>>>> kernel_common/android-4.19-stable
  * @imod_interval: set the interrupt moderation interval in 250ns
  *                 increments or 0 to disable.
  * @xhci_imod_value: imod value to use with xhci
