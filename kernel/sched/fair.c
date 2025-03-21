@@ -6223,7 +6223,11 @@ schedtune_cpu_margin_with(unsigned long util, int cpu, struct task_struct *p)
 
 long schedtune_task_margin(struct task_struct *task)
 {
+#ifdef CONFIG_SCHED_TUNE
 	int boost = schedtune_task_boost(task);
+#elif defined(CONFIG_UCLAMP_TASK)
+	int boost = uclamp_boosted(task);
+#endif
 	unsigned long util;
 	long margin;
 
@@ -7781,7 +7785,11 @@ static int find_energy_efficient_cpu(struct task_struct *p, int prev_cpu,
 	u64 start_t = 0;
 	int delta = 0;
 	int task_boost = per_task_boost(p);
+#ifdef CONFIG_SCHED_TUNE
 	int boosted = (schedtune_task_boost(p) > 0) || (task_boost > 0);
+#elif defined(CONFIG_UCLAMP_TASK)
+	int boosted = (uclamp_boosted(p) > 0) || (task_boost > 0);
+#endif
 	int start_cpu;
 
 	if (is_many_wakeup(sibling_count_hint) && prev_cpu != cpu &&
