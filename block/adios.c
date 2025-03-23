@@ -9,6 +9,7 @@
 #include <linux/bio.h>
 #include <linux/blkdev.h>
 #include <linux/compiler.h>
+#include <linux/elevator.h>
 #include <linux/fs.h>
 #include <linux/init.h>
 #include <linux/kernel.h>
@@ -18,7 +19,6 @@
 #include <linux/slab.h>
 #include <linux/timekeeping.h>
 
-#include "elevator.h"
 #include "blk.h"
 #include "blk-mq.h"
 #include "blk-mq-sched.h"
