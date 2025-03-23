@@ -12,7 +12,6 @@
 #include <linux/fs.h>
 #include <linux/init.h>
 #include <linux/kernel.h>
-#include <linux/math.h>
 #include <linux/module.h>
 #include <linux/rbtree.h>
 #include <linux/sbitmap.h>
