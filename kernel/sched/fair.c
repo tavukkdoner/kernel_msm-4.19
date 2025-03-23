@@ -10705,6 +10705,8 @@ static struct rq *find_busiest_queue(struct lb_env *env,
 
 static int need_active_balance(struct lb_env *env)
 {
+	struct sched_domain *sd = env->sd;
+	
 	if (env->idle == CPU_NEWLY_IDLE) {
 
 		/*
