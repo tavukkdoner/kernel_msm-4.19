@@ -1856,7 +1856,7 @@ static int userfaultfd_continue(struct userfaultfd_ctx *ctx, unsigned long arg)
 			   /* don't copy the output fields */
 			   sizeof(uffdio_continue) - (sizeof(__s64))))
 		goto out;
-	ret = validate_range(ctx->mm, &uffdio_continue.range.start,
+	ret = validate_range(ctx->mm, uffdio_continue.range.start,
 			     uffdio_continue.range.len);
 	if (ret)
 		goto out;
