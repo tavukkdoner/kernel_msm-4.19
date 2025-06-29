@@ -5100,6 +5100,8 @@ void hugetlb_unshare_all_pmds(struct vm_area_struct *vma)
 	end = ALIGN_DOWN(vma->vm_end, PUD_SIZE);
 	if (start >= end)
 		return;
+	
+	flush_cache_range(vma, start, end);
 	/*
 	 * No need to call adjust_range_if_pmd_sharing_possible(), because
 	 * we have already done the PUD_SIZE alignment.
