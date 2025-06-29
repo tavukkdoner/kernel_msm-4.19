@@ -139,7 +139,7 @@ good_area:
 	 */
 	fault = handle_mm_fault(vma, address, flags);
 
-	if (unlikely(fatal_signal_pending(current))) {
+	if (fatal_signal_pending(current)) {
 
 		/*
 		 * if fault retry, mmap_sem already relinquished by core mm
