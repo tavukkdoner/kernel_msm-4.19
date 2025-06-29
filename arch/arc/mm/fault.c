@@ -68,9 +68,9 @@ void do_page_fault(unsigned long address, struct pt_regs *regs)
 	struct mm_struct *mm = tsk->mm;
 	int si_code = SEGV_MAPERR;
 	vm_fault_t fault;
-	int write = regs->ecr_cause & ECR_C_PROTV_STORE;  /* ST/EX */
-	unsigned int flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE;
-
+	unsigned int write = 0, exec = 0, mask;
+	unsigned int flags;
+	
 	/*
 	 * We fault-in kernel-space virtual memory on-demand. The
 	 * 'reference' page table is init_mm.pgd.
@@ -93,9 +93,17 @@ void do_page_fault(unsigned long address, struct pt_regs *regs)
 	 */
 	if (faulthandler_disabled() || !mm)
 		goto no_context;
-
+	
+	if (regs->ecr_cause & ECR_C_PROTV_STORE)	/* ST/EX */
+		write = 1;
+	else if ((regs->ecr_vec == ECR_V_PROTV) &&
+	         (regs->ecr_cause == ECR_C_PROTV_INST_FETCH))
+		exec = 1;
+	flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE;
 	if (user_mode(regs))
 		flags |= FAULT_FLAG_USER;
+	if (write)
+		flags |= FAULT_FLAG_WRITE;
 retry:
 	down_read(&mm->mmap_sem);
 	vma = find_vma(mm, address);
@@ -107,24 +115,16 @@ retry:
 	}
 
 	/*
-	 * Ok, we have a good vm_area for this memory access, so
-	 * we can handle it..
+	 * vm_area is good, now check permissions for this memory access
 	 */
-	si_code = SEGV_ACCERR;
-
-	/* Handle protection violation, execute on heap or stack */
-
-	if ((regs->ecr_vec == ECR_V_PROTV) &&
-	    (regs->ecr_cause == ECR_C_PROTV_INST_FETCH))
+	mask = VM_READ;
+	if (write)
+		mask = VM_WRITE;
+	if (exec)
+		mask = VM_EXEC;
+	if (!(vma->vm_flags & mask)) {
+		info.si_code = SEGV_ACCERR;
 		goto bad_area;
-
-	if (write) {
-		if (!(vma->vm_flags & VM_WRITE))
-			goto bad_area;
-		flags |= FAULT_FLAG_WRITE;
-	} else {
-		if (!(vma->vm_flags & (VM_READ | VM_EXEC)))
-			goto bad_area;
 	}
 
 	/*
