@@ -2768,9 +2768,8 @@ static inline vm_fault_t vmf_error(int err)
 	return VM_FAULT_SIGBUS;
 }
 
-struct page *follow_page_mask(struct vm_area_struct *vma,
-			      unsigned long address, unsigned int foll_flags,
-			      unsigned int *page_mask);
+struct page *follow_page(struct vm_area_struct *vma, unsigned long address,
+			 unsigned int foll_flags);;
 
 static inline struct page *follow_page(struct vm_area_struct *vma,
 		unsigned long address, unsigned int foll_flags)
