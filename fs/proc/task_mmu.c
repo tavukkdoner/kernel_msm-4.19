@@ -723,6 +723,9 @@ static void show_smap_vma_flags(struct seq_file *m, struct vm_area_struct *vma)
 #if VM_PKEY_BIT4
 		[ilog2(VM_PKEY_BIT4)]	= "",
 #endif
+#ifdef CONFIG_HAVE_ARCH_USERFAULTFD_MINOR
+		[ilog2(VM_UFFD_MINOR)]	= "ui",
+#endif /* CONFIG_HAVE_ARCH_USERFAULTFD_MINOR */
 #endif /* CONFIG_ARCH_HAS_PKEYS */
 	};
 	size_t i;
