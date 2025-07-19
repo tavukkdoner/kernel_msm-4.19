@@ -4477,6 +4477,12 @@ static int isolate_pages(struct lruvec *lruvec, struct scan_control *sc, int swa
 	 */
 	if (!swappiness)
 		type = LRU_GEN_FILE;
+	else if (sc->clean_below_min)
+		type = LRU_GEN_ANON;
+	else if (sc->anon_below_min)
+		type = LRU_GEN_FILE;
+	else if (sc->clean_below_low)
+		type = LRU_GEN_ANON;
 	else if (min_seq[LRU_GEN_ANON] < min_seq[LRU_GEN_FILE])
 		type = LRU_GEN_ANON;
 	else if (swappiness == 1)
@@ -4515,6 +4521,8 @@ static int evict_pages(struct lruvec *lruvec, struct scan_control *sc, int swapp
 	struct lru_gen_mm_walk *walk;
 	struct mem_cgroup *memcg = lruvec_memcg(lruvec);
 	struct pglist_data *pgdat = lruvec_pgdat(lruvec);
+
+	prepare_workingset_protection(pgdat, sc);
 
 	spin_lock_irq(&pgdat->lru_lock);
 
