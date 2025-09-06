@@ -622,9 +622,29 @@ void devpts_pty_kill(struct dentry *dentry)
 {
 	WARN_ON_ONCE(dentry->d_sb->s_magic != DEVPTS_SUPER_MAGIC);
 
+	pr_info("%s: dentry current: %px\n", __func__, dentry);
+		if(dentry->d_inode){
+			pr_info("%s: dentry inode  current: %px\n", __func__, dentry->d_inode);
+		}
 	dentry->d_fsdata = NULL;
+	pr_info("%s: dentry1 current: %px\n", __func__, dentry);
+		if(dentry->d_inode){
+			pr_info("%s: dentry1 inode5  current: %px\n", __func__, dentry->d_inode);
+		}
 	drop_nlink(dentry->d_inode);
+	pr_info("%s: dentry2 current: %px\n", __func__, dentry);
+		if(dentry->d_inode){
+			pr_info("%s: dentry2 inode5  current: %px\n", __func__, dentry->d_inode);
+		}
 	d_delete(dentry);
+	pr_info("%s: dentry3 current: %px\n", __func__, dentry);
+		if(dentry->d_inode){
+			pr_info("%s: dentry3 inode5  current: %px\n", __func__, dentry->d_inode);
+		}
+	pr_info("%s: dentry4 current: %px\n", __func__, dentry);
+		if(dentry->d_inode){
+			pr_info("%s: dentry4 inode5  current: %px\n", __func__, dentry->d_inode);
+		}
 	dput(dentry);	/* d_alloc_name() in devpts_pty_new() */
 }
 
