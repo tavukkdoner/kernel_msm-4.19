@@ -63,19 +63,41 @@ static void pty_close(struct tty_struct *tty, struct file *filp)
 	/* Review - krefs on tty_link ?? */
 	if (!tty->link)
 		return;
+    if(tty->link->driver_data){
+	    pr_info("%s: tty link1  current: %px\n", __func__, tty->link->driver_data);
+    }
 	set_bit(TTY_OTHER_CLOSED, &tty->link->flags);
+	if(tty->link->driver_data){
+	    pr_info("%s: tty link2   current: %px\n", __func__, tty->link->driver_data);
+    }
 	wake_up_interruptible(&tty->link->read_wait);
+	if(tty->link->driver_data){
+	    pr_info("%s: tty link3   current: %px\n", __func__, tty->link->driver_data);
+    }
 	wake_up_interruptible(&tty->link->write_wait);
+	if(tty->link->driver_data){
+	    pr_info("%s: tty link4   current: %px\n", __func__, tty->link->driver_data);
+    }
 	if (tty->driver->subtype == PTY_TYPE_MASTER) {
 		set_bit(TTY_OTHER_CLOSED, &tty->flags);
+		if(tty->link->driver_data){
+	    pr_info("%s: tty link5   current: %px\n", __func__, tty->link->driver_data);
+    }
 #ifdef CONFIG_UNIX98_PTYS
 		if (tty->driver == ptm_driver) {
 			mutex_lock(&devpts_mutex);
-			if (tty->link->driver_data)
+			if (tty->link->driver_data){
+				if(tty->link->driver_data){
+	    pr_info("%s: tty link6   current: %px\n", __func__, tty->link->driver_data);
+    }
 				devpts_pty_kill(tty->link->driver_data);
+			}
 			mutex_unlock(&devpts_mutex);
 		}
 #endif
+		if(tty->link->driver_data){
+	    pr_info("%s: tty link7   current: %px\n", __func__, tty->link->driver_data);
+    }
 		tty_vhangup(tty->link);
 	}
 }
