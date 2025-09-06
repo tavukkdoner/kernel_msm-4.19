@@ -1660,8 +1660,11 @@ int tty_release(struct inode *inode, struct file *filp)
 	long	timeout = 0;
 	int	once = 1;
 
-	if (tty_paranoia_check(tty, inode, __func__))
+	pr_info("%s: inode current: %px\n", __func__, inode);
+	if (tty_paranoia_check(tty, inode, __func__)){
+		pr_info("%s: inode1 current: %px\n", __func__, inode);
 		return 0;
+	}
 
 	tty_lock(tty);
 	check_tty_count(tty, __func__);
