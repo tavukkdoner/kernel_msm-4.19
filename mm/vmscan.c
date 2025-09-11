@@ -4108,7 +4108,7 @@ static int kswapd(void *p)
 	 * trying to free the first piece of memory in the first place).
 	 */
 	tsk->flags |= PF_MEMALLOC | PF_SWAPWRITE | PF_KSWAPD;
-	set_user_nice(current, 5);
+	set_user_nice(current, -15);
 	set_freezable();
 
 	WRITE_ONCE(pgdat->kswapd_order, 0);
