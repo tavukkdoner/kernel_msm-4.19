@@ -191,7 +191,7 @@ static void drain_timer_func(struct timer_list *tlist)
 	queue_work(driver->diag_wq, &(driver->diag_drain_work));
 }
 
-static void wake_timer_func(unsigned long data)
+static void wake_timer_func(struct timer_list *tlist)
 {
 	pm_relax(driver->diag_dev);
 }
