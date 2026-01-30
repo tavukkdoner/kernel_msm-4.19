@@ -1214,6 +1214,9 @@ static int smb5_usb_prop_is_writeable(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_VOLTAGE_MAX_LIMIT:
 	case POWER_SUPPLY_PROP_ADAPTER_CC_MODE:
 	case POWER_SUPPLY_PROP_APSD_RERUN:
+	case POWER_SUPPLY_PROP_VOLTAGE_MAX:
+	case POWER_SUPPLY_PROP_BOOST_CURRENT:
+	case POWER_SUPPLY_PROP_CURRENT_MAX:
 		return 1;
 	default:
 		break;
@@ -1382,6 +1385,13 @@ static int smb5_usb_main_get_prop(struct power_supply *psy,
 
 	switch (psp) {
 	case POWER_SUPPLY_PROP_VOLTAGE_MAX:
+		// POWER_SUPPLY_VOLTAGE_MAX=4400000
+#if IS_ENABLED(CONFIG_MACH_XIAOMI_SDM439)
+		if (xiaomi_sdm439_mach_get() && val->intval < 5000000)
+			pr_err("val->intval=%d\n",
+						val->intval);
+			val->intval = 5000000;
+#endif
 		rc = smblib_get_charge_param(chg, &chg->param.fv, &val->intval);
 		break;
 	case POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT_MAX:
@@ -1462,6 +1472,13 @@ static int smb5_usb_main_set_prop(struct power_supply *psy,
 
 	switch (psp) {
 	case POWER_SUPPLY_PROP_VOLTAGE_MAX:
+		// POWER_SUPPLY_VOLTAGE_MAX=4400000
+#if IS_ENABLED(CONFIG_MACH_XIAOMI_SDM439)
+		if (xiaomi_sdm439_mach_get() && val->intval < 5000000)
+			pr_err("val->intval=%d\n",
+						val->intval);
+			val->intval = 5000000;
+#endif
 		rc = smblib_set_charge_param(chg, &chg->param.fv, val->intval);
 		break;
 	case POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT_MAX:
@@ -1564,6 +1581,9 @@ static int smb5_usb_main_prop_is_writeable(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_FORCE_MAIN_ICL:
 	case POWER_SUPPLY_PROP_COMP_CLAMP_LEVEL:
 	case POWER_SUPPLY_PROP_HOT_TEMP:
+	case POWER_SUPPLY_PROP_VOLTAGE_MAX:
+	case POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT_MAX:
+	case POWER_SUPPLY_PROP_CURRENT_MAX:
 		rc = 1;
 		break;
 	default:
@@ -1846,6 +1866,13 @@ static int smb5_batt_get_prop(struct power_supply *psy,
 		if (val->intval < 0)
 			val->intval = get_client_vote(chg->fv_votable,
 						      BATT_PROFILE_VOTER);
+		// POWER_SUPPLY_VOLTAGE_MAX=4400000
+#if IS_ENABLED(CONFIG_MACH_XIAOMI_SDM439)
+		if (xiaomi_sdm439_mach_get() && val->intval < 5000000)
+			pr_err("val->intval=%d\n",
+						val->intval);
+			val->intval = 5000000;
+#endif
 		break;
 	case POWER_SUPPLY_PROP_VOLTAGE_QNOVO:
 		val->intval = get_client_vote_locked(chg->fv_votable,
@@ -1997,6 +2024,13 @@ static int smb5_batt_set_prop(struct power_supply *psy,
 		vote(chg->pl_disable_votable, USER_VOTER, (bool)val->intval, 0);
 		break;
 	case POWER_SUPPLY_PROP_VOLTAGE_MAX:
+		// POWER_SUPPLY_VOLTAGE_MAX=4400000
+#if IS_ENABLED(CONFIG_MACH_XIAOMI_SDM439)
+		if (xiaomi_sdm439_mach_get() && val->intval < 5000000)
+			pr_err("val->intval=%d\n",
+						val->intval);
+			val->intval = 5000000;
+#endif
 		chg->batt_profile_fv_uv = val->intval;
 		vote(chg->fv_votable, BATT_PROFILE_VOTER, true, val->intval);
 		break;
@@ -2096,6 +2130,9 @@ static int smb5_batt_prop_is_writeable(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_DIE_HEALTH:
 	case POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT_MAX:
 	case POWER_SUPPLY_PROP_BATTERY_CHARGING_ENABLED:
+	case POWER_SUPPLY_PROP_VOLTAGE_MAX:
+	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
+	case POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT_MAX:
 		return 1;
 	default:
 		break;
