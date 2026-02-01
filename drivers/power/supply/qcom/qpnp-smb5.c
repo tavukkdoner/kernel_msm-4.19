@@ -1472,8 +1472,8 @@ static int smb5_usb_main_set_prop(struct power_supply *psy,
 		if (xiaomi_sdm439_mach_get() && val->intval < 5000000) {
 			pr_err("val->intval usb=%d\n",
 						val->intval);
-			rc = smblib_set_charge_param(chg, &chg->param.fv, 5000000);
-			break;
+			//rc = smblib_set_charge_param(chg, &chg->param.fv, 5000000);
+			//break;
 		}
 #endif
 		rc = smblib_set_charge_param(chg, &chg->param.fv, val->intval);
@@ -2021,9 +2021,9 @@ static int smb5_batt_set_prop(struct power_supply *psy,
 		if (xiaomi_sdm439_mach_get() && val->intval < 5000000) {
 			pr_err("val->intval batt set=%d\n",
 						val->intval);
-	        chg->batt_profile_fv_uv = 5000000;
-		    vote(chg->fv_votable, BATT_PROFILE_VOTER, true, 5000000);
-		    break;
+	        //chg->batt_profile_fv_uv = 5000000;
+		    //vote(chg->fv_votable, BATT_PROFILE_VOTER, true, 5000000);
+		    //break;
 		}
 #endif
 		chg->batt_profile_fv_uv = val->intval;
