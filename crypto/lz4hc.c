@@ -32,7 +32,7 @@ static void *lz4hc_alloc_ctx(struct crypto_scomp *tfm)
 {
 	void *ctx;
 
-	ctx = vmalloc(LZ4HC_MEM_COMPRESS);
+	ctx = vmalloc(LZ4_STREAMHC_MINSIZE);
 	if (!ctx)
 		return ERR_PTR(-ENOMEM);
 
@@ -66,7 +66,7 @@ static int __lz4hc_compress_crypto(const u8 *src, unsigned int slen,
 				   u8 *dst, unsigned int *dlen, void *ctx)
 {
 	int out_len = LZ4_compress_HC(src, dst, slen,
-		*dlen, LZ4HC_DEFAULT_CLEVEL, ctx);
+		*dlen, LZ4HC_CLEVEL_DEFAULT, ctx);
 
 	if (!out_len)
 		return -EINVAL;
