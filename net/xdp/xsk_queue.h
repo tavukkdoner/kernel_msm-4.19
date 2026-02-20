@@ -189,7 +189,7 @@ static inline struct xdp_desc *xskq_validate_desc(struct xsk_queue *q,
 		struct xdp_rxtx_ring *ring = (struct xdp_rxtx_ring *)q->ring;
 		unsigned int idx = q->cons_tail & q->ring_mask;
 
-		*desc = READ_ONCE(ring->desc[idx]);
+		*desc = __READ_ONCE(ring->desc[idx]);
 		if (xskq_is_valid_desc(q, desc))
 			return desc;
 
