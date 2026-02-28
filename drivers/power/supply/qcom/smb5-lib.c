@@ -1454,7 +1454,11 @@ static int set_sdp_current(struct smb_charger *chg, int icl_ua)
 {
 	int rc;
 	u8 icl_options;
-	const struct apsd_result *apsd_result = smblib_get_apsd_result(chg);
+	const struct apsd_result *apsd_result = smblib_get_apsd_result(chg);\
+
+	if (icl_ua == USBIN_500MA) {
+		icl_ua = USBIN_900MA;
+	}
 
 	/* power source is SDP */
 	switch (icl_ua) {
