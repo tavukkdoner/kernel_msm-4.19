@@ -6,7 +6,6 @@
  */
 #include <linux/kernel.h>
 #include <linux/fs.h>
-#include <linux/bitops.h>
 #include <linux/blkdev.h>
 #include <linux/blk-mq.h>
 #include <linux/elevator.h>
@@ -14,8 +13,6 @@
 #include <linux/module.h>
 #include <linux/slab.h>
 #include <linux/init.h>
-#include <linux/list.h>
-#include <linux/spinlock.h>
 #include <linux/compiler.h>
 #include <linux/rbtree.h>
 #include <linux/sbitmap.h>
@@ -35,33 +32,11 @@ static const int writes_starved = 2;    /* max times reads can starve a write */
 static const int fifo_batch = 16;       /* # of sequential requests treated as one
 				     by the above parameters. For throughput. */
 
-enum {
-	DD_DISPATCHING	= 0,
-	DD_INSERTING	= 1,
-	DD_BUCKETS	= 2,	
-};
-
-#define DD_CPU_BUCKETS		32
-#define DD_CPU_BUCKETS_MASK	(DD_CPU_BUCKETS - 1)
-
-struct dd_bucket_list {
-	struct list_head list;
-	spinlock_t lock;
-} ____cacheline_aligned_in_smp;
-
 struct deadline_data {
 	/*
 	 * run time data
 	 */
 
-	struct {
-		spinlock_t lock;
-		spinlock_t zone_lock;
-	} ____cacheline_aligned_in_smp;
-
-	unsigned long run_state;
-
-	struct dd_bucket_list bucket_lists[DD_CPU_BUCKETS];	
 	/*
 	 * requests (deadline_rq s) are present on both sort_list and fifo_list
 	 */
@@ -83,6 +58,8 @@ struct deadline_data {
 	int writes_starved;
 	int front_merges;
 
+	spinlock_t lock;
+	spinlock_t zone_lock;
 	struct list_head dispatch;
 };
 
@@ -405,21 +382,8 @@ static struct request *dd_dispatch_request(struct blk_mq_hw_ctx *hctx)
 	struct deadline_data *dd = hctx->queue->elevator->elevator_data;
 	struct request *rq;
 
-	/*
-	 * If someone else is already dispatching, skip this one. This will
-	 * defer the next dispatch event to when something completes, and could
-	 * potentially lower the queue depth for contended cases.
-	 *
-	 * See the logic in blk_mq_do_dispatch_sched(), which loops and
-	 * retries if nothing is dispatched.
-	 */
-	if (test_bit(DD_DISPATCHING, &dd->run_state) ||
-	    test_and_set_bit(DD_DISPATCHING, &dd->run_state))
-		return NULL;
-
 	spin_lock(&dd->lock);
 	rq = __dd_dispatch_request(dd);
-	clear_bit(DD_DISPATCHING, &dd->run_state);
 	spin_unlock(&dd->lock);
 
 	return rq;
@@ -454,15 +418,6 @@ static int dd_init_queue(struct request_queue *q, struct elevator_type *e)
 	}
 	eq->elevator_data = dd;
 
-	spin_lock_init(&dd->lock);
-	spin_lock_init(&dd->zone_lock);
-
-	int i = 0;
-	for (; i < DD_CPU_BUCKETS; i++) {
-		INIT_LIST_HEAD(&dd->bucket_lists[i].list);
-		spin_lock_init(&dd->bucket_lists[i].lock);
-	}
-
 	INIT_LIST_HEAD(&dd->fifo_list[READ]);
 	INIT_LIST_HEAD(&dd->fifo_list[WRITE]);
 	dd->sort_list[READ] = RB_ROOT;
@@ -472,6 +427,8 @@ static int dd_init_queue(struct request_queue *q, struct elevator_type *e)
 	dd->writes_starved = writes_starved;
 	dd->front_merges = 1;
 	dd->fifo_batch = fifo_batch;
+	spin_lock_init(&dd->lock);
+	spin_lock_init(&dd->zone_lock);
 	INIT_LIST_HEAD(&dd->dispatch);
 
 	q->elevator = eq;
@@ -508,19 +465,7 @@ static bool dd_bio_merge(struct blk_mq_hw_ctx *hctx, struct bio *bio)
 	struct request *free = NULL;
 	bool ret;
 
-	/*
-	 * bio merging is called for every bio queued, and it's very easy
-	 * to run into contention because of that. If we fail getting
-	 * the dd lock, just skip this merge attempt. For related IO, the
-	 * plug will be the successful merging point. If we get here, we
-	 * already failed doing the obvious merge. Chances of actually
-	 * getting a merge off this path is a lot slimmer, so skipping an
-	 * occassional lookup that will most likely not succeed anyway should
-	 * not be a problem.
-	 */
-	if (!spin_trylock(&dd->lock))
-		return false;
-
+	spin_lock(&dd->lock);
 	ret = blk_mq_sched_try_merge(q, bio, &free);
 	spin_unlock(&dd->lock);
 
@@ -572,115 +517,20 @@ static void dd_insert_request(struct request_queue *q, struct request *rq,
 	}
 }
 
-static void dd_dispatch_from_buckets(struct deadline_data *dd,
-				     struct list_head *list)
-{
-	int i;
-
-	if (!test_bit(DD_BUCKETS, &dd->run_state) ||
-	    !test_and_clear_bit(DD_BUCKETS, &dd->run_state))
-		return;
-
-	for (i = 0; i < DD_CPU_BUCKETS; i++) {
-		struct dd_bucket_list *bucket = &dd->bucket_lists[i];
-
-		if (list_empty_careful(&bucket->list))
-			continue;
-		spin_lock(&bucket->lock);
-		list_splice_init(&bucket->list, list);
-		spin_unlock(&bucket->lock);
-	}
-}
-
-/*
- * If we can grab the dd->lock, then just return and do the insertion as per
- * usual. If not, add to one of our internal buckets, and afterwards recheck
- * if if we should retry.
- */
-static bool dd_insert_to_bucket(struct deadline_data *dd,
-				struct list_head *list)
-	__acquires(&dd->lock)
-{
-	struct dd_bucket_list *bucket;
-
-	/*
-	 * If we can grab the lock, proceed as per usual. If not, and insert
-	 * isn't running, force grab the lock and proceed as per usual.
-	 */
-	if (spin_trylock(&dd->lock))
-		return false;
-	if (!test_bit(DD_INSERTING, &dd->run_state)) {
-		spin_lock(&dd->lock);
-		return false;
-	}
-
-	if (!test_bit(DD_BUCKETS, &dd->run_state))
-		set_bit(DD_BUCKETS, &dd->run_state);
-
-	bucket = &dd->bucket_lists[get_cpu() & DD_CPU_BUCKETS_MASK];
-	spin_lock(&bucket->lock);
-	list_splice_init(list, &bucket->list);
-	spin_unlock(&bucket->lock);
-	put_cpu();
-
-	/*
-	 * Insertion still running, we are done.
-	 */
-	if (test_bit(DD_INSERTING, &dd->run_state))
-		return true;
-
-	/*
-	 * We may be too late, play it safe and grab the lock. This will
-	 * flush the above bucket insert as well and insert it.
-	 */
-	spin_lock(&dd->lock);
-	return false;
-}
-
-static void __dd_insert_requests(struct request_queue *q,
-				 struct deadline_data *dd,
-				 struct list_head *list, 
-				 bool at_head)
-{
-	set_bit(DD_INSERTING, &dd->run_state);
-	do {
-		while (!list_empty(list)) {
-			struct request *rq;
-
-			rq = list_first_entry(list, struct request, queuelist);
-			list_del_init(&rq->queuelist);
-			dd_insert_request(q, rq, at_head);
-		}
-
-		dd_dispatch_from_buckets(dd, list);
-		if (list_empty(list))
-			break;
-	} while (1);
-
-	clear_bit(DD_INSERTING, &dd->run_state);
-}
-
 static void dd_insert_requests(struct blk_mq_hw_ctx *hctx,
 			       struct list_head *list, bool at_head)
 {
 	struct request_queue *q = hctx->queue;
 	struct deadline_data *dd = q->elevator->elevator_data;
 
-	/*
-	 * If dispatch is busy and we ended up adding to our internal bucket,
-	 * then we're done for now.
-	 */
-	if (dd_insert_to_bucket(dd, list))
-		return;
-	do {
-		__dd_insert_requests(q, dd, list, at_head);
+	spin_lock(&dd->lock);
+	while (!list_empty(list)) {
+		struct request *rq;
 
-		/*
-		 * If buckets is set after inserting was cleared, be safe and do
-		 * another loop as we could be racing with bucket insertion.
-		 */
-	} while (test_bit(DD_BUCKETS, &dd->run_state));
-
+		rq = list_first_entry(list, struct request, queuelist);
+		list_del_init(&rq->queuelist);
+		dd_insert_request(q, rq, at_head);
+	}
 	spin_unlock(&dd->lock);
 }
 
