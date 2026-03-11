@@ -6,7 +6,6 @@
  */
 #include <linux/kernel.h>
 #include <linux/fs.h>
-#include <linux/bitops.h>
 #include <linux/blkdev.h>
 #include <linux/blk-mq.h>
 #include <linux/elevator.h>
@@ -33,21 +32,11 @@ static const int writes_starved = 2;    /* max times reads can starve a write */
 static const int fifo_batch = 16;       /* # of sequential requests treated as one
 				     by the above parameters. For throughput. */
 
-enum {
-	DD_DISPATCHING	= 0,
-};
-
 struct deadline_data {
 	/*
 	 * run time data
 	 */
 
-	struct {
-		spinlock_t lock;
-		spinlock_t zone_lock;
-	} ____cacheline_aligned_in_smp;
-
-	unsigned long run_state;
 	/*
 	 * requests (deadline_rq s) are present on both sort_list and fifo_list
 	 */
@@ -69,6 +58,8 @@ struct deadline_data {
 	int writes_starved;
 	int front_merges;
 
+	spinlock_t lock;
+	spinlock_t zone_lock;
 	struct list_head dispatch;
 };
 
@@ -391,21 +382,8 @@ static struct request *dd_dispatch_request(struct blk_mq_hw_ctx *hctx)
 	struct deadline_data *dd = hctx->queue->elevator->elevator_data;
 	struct request *rq;
 
-	/*
-	 * If someone else is already dispatching, skip this one. This will
-	 * defer the next dispatch event to when something completes, and could
-	 * potentially lower the queue depth for contended cases.
-	 *
-	 * See the logic in blk_mq_do_dispatch_sched(), which loops and
-	 * retries if nothing is dispatched.
-	 */
-	if (test_bit(DD_DISPATCHING, &dd->run_state) ||
-	    test_and_set_bit(DD_DISPATCHING, &dd->run_state))
-		return NULL;
-
 	spin_lock(&dd->lock);
 	rq = __dd_dispatch_request(dd);
-	clear_bit(DD_DISPATCHING, &dd->run_state);
 	spin_unlock(&dd->lock);
 
 	return rq;
@@ -440,9 +418,6 @@ static int dd_init_queue(struct request_queue *q, struct elevator_type *e)
 	}
 	eq->elevator_data = dd;
 
-	spin_lock_init(&dd->lock);
-	spin_lock_init(&dd->zone_lock);
-
 	INIT_LIST_HEAD(&dd->fifo_list[READ]);
 	INIT_LIST_HEAD(&dd->fifo_list[WRITE]);
 	dd->sort_list[READ] = RB_ROOT;
@@ -452,6 +427,8 @@ static int dd_init_queue(struct request_queue *q, struct elevator_type *e)
 	dd->writes_starved = writes_starved;
 	dd->front_merges = 1;
 	dd->fifo_batch = fifo_batch;
+	spin_lock_init(&dd->lock);
+	spin_lock_init(&dd->zone_lock);
 	INIT_LIST_HEAD(&dd->dispatch);
 
 	q->elevator = eq;
