@@ -8619,8 +8619,7 @@ idle:
 	 */
 	rq_idle_stamp_update(rq);
 	new_tasks = idle_balance(rq, rf);
-	if (new_tasks == 0 &&
-		(!static_key_unlikely(&sched_energy_present) || READ_ONCE(rq->rd->overutilized)))
+	if (new_tasks == 0)
 		    new_tasks = try_steal(rq, rf);
 
 	if (new_tasks)
