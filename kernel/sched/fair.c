@@ -9097,20 +9097,20 @@ can_migrate_task_llc(struct task_struct *p, struct rq *rq, struct rq *dst_rq)
 }
 
 /*
- * detach_task() -- detach the task for the migration specified in env
+ * detach_task() -- detach the task for the migration from @src_rq to @dst_cpu.
  */
-static void detach_task(struct task_struct *p, struct lb_env *env)
+static void detach_task(struct task_struct *p, struct rq *src_rq, struct rq *dst_rq, int dst_cpu)
 {
-	lockdep_assert_held(&env->src_rq->lock);
+	lockdep_assert_held(&src_rq->lock);
 
 	p->on_rq = TASK_ON_RQ_MIGRATING;
-	deactivate_task(env->src_rq, p, DEQUEUE_NOCLOCK);
+	deactivate_task(src_rq, p, DEQUEUE_NOCLOCK);
 	lockdep_off();
-	double_lock_balance(env->src_rq, env->dst_rq);
-	if (!(env->src_rq->clock_update_flags & RQCF_UPDATED))
-		update_rq_clock(env->src_rq);
-	set_task_cpu(p, env->dst_cpu);
-	double_unlock_balance(env->src_rq, env->dst_rq);
+	double_lock_balance(src_rq, dst_rq);
+	if (!(src_rq->clock_update_flags & RQCF_UPDATED))
+		update_rq_clock(src_rq);
+	set_task_cpu(p, dst_cpu);
+	double_unlock_balance(src_rq, dst_rq);
 	lockdep_on();
 }
 
@@ -9131,7 +9131,7 @@ static struct task_struct *detach_one_task(struct lb_env *env)
 		if (!can_migrate_task(p, env))
 			continue;
 
-		detach_task(p, env);
+		detach_task(p, env->src_rq, env->dst_rq, env->dst_cpu);
 
 		/*
 		 * Right now, this is only the second place where
@@ -9237,7 +9237,7 @@ redo:
 			((load / 2) > env->imbalance))
 			goto next;
 
-		detach_task(p, env);
+		detach_task(p, env->src_rq, env->dst_rq, env->dst_cpu);
 		list_add(&p->se.group_node, &env->tasks);
 
 		detached++;
@@ -11350,7 +11350,7 @@ static int active_load_balance_cpu_stop(void *data)
 			task_cpu(push_task) == busiest_cpu &&
 					cpu_online(target_cpu)) {
 			update_rq_clock(busiest_rq);
-			detach_task(push_task, &env);
+			detach_task(push_task, env.src_rq, env.dst_rq, env.dst_cpu);
 			push_task_detached = 1;
 			moved = true;
 		}
@@ -12273,7 +12273,7 @@ detach_next_task(struct cfs_rq *cfs_rq, struct rq *dst_rq)
 
 	list_for_each_entry_reverse(p, &rq->cfs_tasks, se.group_node) {
 		if (can_migrate_task_llc(p, rq, dst_rq)) {
-			detach_task(p, rq, dst_cpu);
+			detach_task(p, rq, dst_rq, dst_cpu);
 			return p;
 		}
 	}
