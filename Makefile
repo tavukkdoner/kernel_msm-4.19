@@ -727,7 +727,7 @@ KBUILD_CFLAGS	+= $(call cc-disable-warning, address-of-packed-member)
 ifeq ($(CONFIG_CC_OPTIMIZE_FOR_SIZE), y)
 KBUILD_CFLAGS   += -Os
 KBUILD_AFLAGS   += -Os
-KBUILD_LDFLAGS  += -Os
+KBUILD_LDFLAGS  += -O2
 else
 KBUILD_CFLAGS   += -O3
 KBUILD_AFLAGS   += -O3
