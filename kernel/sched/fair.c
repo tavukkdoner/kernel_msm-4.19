@@ -6893,16 +6893,6 @@ static int select_idle_cpu(struct task_struct *p, struct sched_domain *sd, int t
 	return cpu;
 }
 
-#define SET_STAT(STAT)							\
-	do {								\
-		if (schedstat_enabled()) {				\
-			struct rq *rq = this_rq();			\
-									\
-			if (rq)						\
-				__schedstat_inc(rq->STAT);		\
-		}							\
-	} while (0)
-
 /*
  * Try and locate an idle core/thread in the LLC cache domain.
  */
@@ -6910,10 +6900,11 @@ static int select_idle_sibling(struct task_struct *p, int prev, int target)
 {
 	struct sched_domain *sd;
 	int i, recent_used_cpu;
+	struct rq *rq = this_rq();
 
 	if (available_idle_cpu(target) && !cpu_isolated(target)) {
 		pr_info("found_idle_cpu_easy");
-		SET_STAT(found_idle_cpu_easy);
+		schedstat_inc(rq->found_idle_cpu_easy);
 		return target;
 	}
 
@@ -6923,7 +6914,7 @@ static int select_idle_sibling(struct task_struct *p, int prev, int target)
 	if (prev != target && cpus_share_cache(prev, target) &&
 			available_idle_cpu(prev) && !cpu_isolated(prev)) {
 		pr_info("found_idle_cpu_easy");
-		SET_STAT(found_idle_cpu_easy);		
+		schedstat_inc(rq->found_idle_cpu_easy);	
 		return prev;
 	}
 
@@ -6939,7 +6930,7 @@ static int select_idle_sibling(struct task_struct *p, int prev, int target)
 		 * candidate for the next wake:
 		 */
 		pr_info("found_idle_cpu_easy");
-		SET_STAT(found_idle_cpu_easy);
+		schedstat_inc(rq->found_idle_cpu_easy);
 		p->recent_used_cpu = prev;
 		return recent_used_cpu;
 	}
@@ -6947,33 +6938,33 @@ static int select_idle_sibling(struct task_struct *p, int prev, int target)
 	sd = rcu_dereference(per_cpu(sd_llc, target));
 	if (!sd) {
 		pr_info("nofound_idle_cpu");
-		SET_STAT(nofound_idle_cpu);
+		schedstat_inc(rq->nofound_idle_cpu);
 		return target;
 	}
 
 	i = select_idle_core(p, sd, target);
 	if ((unsigned)i < nr_cpumask_bits) {
 		pr_info("found_idle_core");
-		SET_STAT(found_idle_core);
+		schedstat_inc(rq->found_idle_core);
 		return i;
 	}
 
 	i = select_idle_cpu(p, sd, target);
 	if ((unsigned)i < nr_cpumask_bits) {
 		pr_info("found_idle_cpu");
-		SET_STAT(found_idle_cpu);
+		schedstat_inc(rq->found_idle_cpu);
 		return i;
 	}
 
 	i = select_idle_smt(p, sd, target);
 	if ((unsigned)i < nr_cpumask_bits) {
 		pr_info("found_idle_cpu");
-		SET_STAT(found_idle_cpu);
+		schedstat_inc(rq->found_idle_cpu);
 		return i;
 	}
 
 	pr_info("nofound_idle_cpu");
-	SET_STAT(nofound_idle_cpu);
+	schedstat_inc(rq->nofound_idle_cpu);
 	return target;
 }
 
