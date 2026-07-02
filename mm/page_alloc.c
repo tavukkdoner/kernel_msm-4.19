@@ -3156,6 +3156,14 @@ int __isolate_free_page(struct page *page, unsigned int order)
 	zone = page_zone(page);
 	mt = get_pageblock_migratetype(page);
 
+	if (unlikely(!PageBuddy(page))) {
+		pr_err("NOT BUDDY in isolate_free_page: page=%p pfn=%lu flags=%lx\n",
+		       page,
+		       page_to_pfn(page),
+		       page->flags);
+		dump_stack();
+	}
+	
 	if (!is_migrate_isolate(mt)) {
 		/*
 		 * Obey watermarks as if the page was being allocated. We can
@@ -3170,6 +3178,20 @@ int __isolate_free_page(struct page *page, unsigned int order)
 		__mod_zone_freepage_state(zone, -(1UL << order), mt);
 	}
 
+	if (unlikely(page->lru.next == LIST_POISON1 ||
+		     page->lru.prev == LIST_POISON2)) {
+
+		pr_err("CORRUPTED LRU BEFORE list_del: page=%p pfn=%lu order=%u flags=%lx ref=%d\n",
+		       page,
+		       page_to_pfn(page),
+		       order,
+		       page->flags,
+		       page_ref_count(page));
+
+		dump_stack();
+		BUG();
+	}
+	
 	/* Remove page from free list */
 	list_del(&page->lru);
 	zone->free_area[order].nr_free--;
