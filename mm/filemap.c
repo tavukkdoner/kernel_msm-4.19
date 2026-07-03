@@ -2724,7 +2724,7 @@ void filemap_map_pages(struct vm_fault *vmf,
 		last_pgoff = xas.xa_index;
 
 		if (want_old_faultaround_pte) {
-			if (iter.index == vmf->pgoff)
+			if (xas.xa_index == vmf->pgoff)
 				vmf->flags &= ~FAULT_FLAG_PREFAULT_OLD;
 			else
 				vmf->flags |= FAULT_FLAG_PREFAULT_OLD;
