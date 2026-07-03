@@ -466,11 +466,6 @@ int migrate_page_move_mapping(struct address_space *mapping,
 
 	xas_lock_irq(&xas);
 
-	if (pslot == NULL) {
-		xas_unlock_irq(&xas);
-		return -EAGAIN;
-	}
-
 	expected_count += hpage_nr_pages(page) + page_has_private(page);
 	if (page_count(page) != expected_count || xas_load(&xas) != page) {
 		xas_unlock_irq(&xas);
@@ -585,11 +580,6 @@ int migrate_huge_page_move_mapping(struct address_space *mapping,
 	int expected_count;
 
 	xas_lock_irq(&xas);
-	if (pslot == NULL) {
-		xas_unlock_irq(&xas);
-		return -EAGAIN;
-	}
-
 	expected_count = 2 + page_has_private(page);
 	if (page_count(page) != expected_count || xas_load(&xas) != page) {
 		xas_unlock_irq(&xas);
