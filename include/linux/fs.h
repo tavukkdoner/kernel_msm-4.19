@@ -459,8 +459,8 @@ struct address_space {
 	unsigned long		nrexceptional;
 	pgoff_t			writeback_index;
 	const struct address_space_operations *a_ops;
-	unsigned long		flags;
 	struct rw_semaphore invalidate_lock;
+	unsigned long		flags;
  	errseq_t		wb_err;
 	spinlock_t		private_lock;
 	struct list_head	private_list;
