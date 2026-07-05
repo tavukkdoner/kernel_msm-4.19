@@ -87,14 +87,14 @@ static int memfd_wait_for_pins(struct address_space *mapping)
 		xas_lock_irq(&xas);
 		xas_for_each_marked(&xas, page, ULONG_MAX, MEMFD_TAG_PINNED) {
 			bool clear = true;
-			if (xa_is_value(page))
-				continue;
 			
 			cache_count = 1;
-			if (page && PageTransHuge(page) && !PageHuge(page))
+			if (!xa_is_value(page) &&
+				PageTransHuge(page) && !PageHuge(page))
 				cache_count = HPAGE_PMD_NR;
 
-			if (page_count(page) - page_mapcount(page) != cache_count) {
+			if (!xa_is_value(page) && cache_count !=
+				page_count(page) - total_mapcount(page)) {
 
 				/*
 				 * On the last scan, we clean up all those tags
