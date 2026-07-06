@@ -3189,7 +3189,6 @@ int __isolate_free_page(struct page *page, unsigned int order)
 		       page_ref_count(page));
 
 		dump_stack();
-		BUG();
 	}
 	
 	/* Remove page from free list */
