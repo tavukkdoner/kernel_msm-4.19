@@ -129,9 +129,9 @@ static inline void __list_del_clearprev(struct list_head *entry)
  */
 static inline void __list_del_entry(struct list_head *entry)
 {
-	pr_err("__list_del_entry: entry=%px prev=%px next=%px caller=%pS\n",
-			entry, entry->prev, entry->next,
-			__builtin_return_address(0));
+	// pr_err("__list_del_entry: entry=%px prev=%px next=%px caller=%pS\n",
+	// 		entry, entry->prev, entry->next,
+	// 		__builtin_return_address(0));
 	if (!__list_del_entry_valid(entry))
 		return;
 
@@ -140,9 +140,9 @@ static inline void __list_del_entry(struct list_head *entry)
 
 static inline void list_del(struct list_head *entry)
 {
-	pr_err("list_del: entry=%px prev=%px next=%px caller=%pS\n",
-			entry, entry->prev, entry->next,
-			__builtin_return_address(0));
+	// pr_err("list_del: entry=%px prev=%px next=%px caller=%pS\n",
+	// 		entry, entry->prev, entry->next,
+	// 		__builtin_return_address(0));
 	//dump_stack();
 	__list_del_entry(entry);
 	entry->next = LIST_POISON1;
