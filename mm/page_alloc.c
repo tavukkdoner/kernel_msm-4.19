@@ -3139,8 +3139,17 @@ void split_page(struct page *page, unsigned int order)
 	VM_BUG_ON_PAGE(PageCompound(page), page);
 	VM_BUG_ON_PAGE(!page_count(page), page);
 
-	for (i = 1; i < (1 << order); i++)
+	/*
+	* Split pages may contain stale data from previous use. Initialize
+	* page->private and page->lru which may have LIST_POISON values.
+	*/
+	INIT_LIST_HEAD(&page->lru);
+	for (i = 1; i < (1 << order); i++) {
 		set_page_refcounted(page + i);
+		set_page_private(page + i, 0);
+		INIT_LIST_HEAD(&page[i].lru);
+	}
+	
 	split_page_owner(page, order);
 }
 EXPORT_SYMBOL_GPL(split_page);
