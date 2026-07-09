@@ -233,8 +233,8 @@ void migrate_irqs(void)
 			unsigned int newcpu = cpumask_any_and(mask,
 							      cpu_online_mask);
 			if (newcpu >= nr_cpu_ids) {
-				pr_info_ratelimited("IRQ%u no longer affine to CPU%u\n",
-						    irq, cpu);
+				//pr_info_ratelimited("IRQ%u no longer affine to CPU%u\n",
+				//		    irq, cpu);
 
 				cpumask_setall(mask);
 			}
