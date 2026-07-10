@@ -2220,6 +2220,20 @@ static int move_freepages(struct zone *zone,
 		}
 
 		order = page_order(page);
+
+		if (unlikely(page->lru.next == LIST_POISON1 ||
+		     page->lru.prev == LIST_POISON2)) {
+
+			pr_err("CORRUPTED LRU BEFORE list_move: page=%p pfn=%lu order=%u flags=%lx ref=%d\n",
+		    	   page,
+		    	   page_to_pfn(page),
+		    	   order,
+		    	   page->flags,
+		    	   page_ref_count(page));
+
+			INIT_LIST_HEAD(&page->lru);
+		}
+		
 		list_move(&page->lru,
 			  &zone->free_area[order].free_list[migratetype]);
 		page += 1 << order;
@@ -3198,6 +3212,7 @@ int __isolate_free_page(struct page *page, unsigned int order)
 		       page_ref_count(page));
 
 		dump_stack();
+		INIT_LIST_HEAD(&page->lru);
 	}
 	
 	/* Remove page from free list */
