@@ -309,7 +309,7 @@ static struct sk_buff *_rmnet_add_headroom(struct sk_buff **skb,
 	return skbn;
 }
 
-static int _rmnet_xmit(struct sk_buff *skb, struct net_device *dev)
+static netdev_tx_t _rmnet_xmit(struct sk_buff *skb, struct net_device *dev)
 {
 	struct rmnet_private *p = netdev_priv(dev);
 	int bam_ret;
@@ -487,7 +487,7 @@ static int rmnet_change_mtu(struct net_device *dev, int new_mtu)
 	return 0;
 }
 
-static int rmnet_xmit(struct sk_buff *skb, struct net_device *dev)
+static netdev_tx_t rmnet_xmit(struct sk_buff *skb, struct net_device *dev)
 {
 	struct rmnet_private *p = netdev_priv(dev);
 	unsigned long flags;
