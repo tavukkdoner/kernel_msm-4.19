@@ -3494,7 +3494,7 @@ EXPORT_SYMBOL(wcnss_flush_delayed_work);
  * directly, so to invoke this function call
  * wcnss_init_work function.
  */
-void wcnss_init_work(struct work_struct *work, void *callbackptr)
+void wcnss_init_work(struct work_struct *work, work_func_t callbackptr)
 {
 	if (work && callbackptr)
 		INIT_WORK(work, callbackptr);
@@ -3505,7 +3505,7 @@ EXPORT_SYMBOL(wcnss_init_work);
  * function directly, so to invoke this function
  * call wcnss_init_delayed_work function.
  */
-void wcnss_init_delayed_work(struct delayed_work *dwork, void *callbackptr)
+void wcnss_init_delayed_work(struct delayed_work *dwork, work_func_t callbackptr)
 {
 	if (dwork && callbackptr)
 		INIT_DELAYED_WORK(dwork, callbackptr);
