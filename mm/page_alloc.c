@@ -1293,6 +1293,18 @@ static void free_pcppages_bulk(struct zone *zone, int count,
 		do {
 			page = list_last_entry(list, struct page, lru);
 			/* must delete to avoid corrupting pcp list */
+			if (unlikely(page->lru.next == LIST_POISON1 ||
+				page->lru.prev == LIST_POISON2)) {
+
+				pr_err("CORRUPTED LRU BEFORE free_pcppages_bulk: page=%p pfn=%lu order=%u flags=%lx ref=%d\n",
+		    		  page,
+		    		  page_to_pfn(page),
+		    		  page_order(page),
+		    		  page->flags,
+		    		  page_ref_count(page));
+
+				INIT_LIST_HEAD(&page->lru);
+			}
 			list_del(&page->lru);
 			pcp->count--;
 
