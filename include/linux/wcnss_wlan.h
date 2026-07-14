@@ -8,6 +8,7 @@
 #include <linux/device.h>
 #include <linux/rpmsg.h>
 #include <linux/sched.h>
+#include <linux/workqueue.h>
 
 #define IRIS_REGULATORS		4
 #define PRONTO_REGULATORS	3
@@ -160,8 +161,8 @@ int wcnss_wlan_iris_xo_mode(void);
 int wcnss_wlan_dual_band_disabled(void);
 void wcnss_flush_work(struct work_struct *work);
 void wcnss_flush_delayed_work(struct delayed_work *dwork);
-void wcnss_init_work(struct work_struct *work, void *callbackptr);
-void wcnss_init_delayed_work(struct delayed_work *dwork, void *callbackptr);
+void wcnss_init_work(struct work_struct *work, work_func_t callbackptr);
+void wcnss_init_delayed_work(struct delayed_work *dwork, work_func_t callbackptr);
 int wcnss_get_iris_name(char *iris_version);
 void wcnss_dump_stack(struct task_struct *task);
 void wcnss_snoc_vote(bool clk_chk_en);
