@@ -15,8 +15,10 @@
 #include <linux/vmpressure.h>
 #include <uapi/linux/sched/types.h>
 
+static unsigned int min_free_mb = CONFIG_ANDROID_SIMPLE_LMK_MINFREE;
+
 /* The minimum number of pages to free per reclaim */
-#define MIN_FREE_PAGES (CONFIG_ANDROID_SIMPLE_LMK_MINFREE * SZ_1M / PAGE_SIZE)
+#define MIN_FREE_PAGES ((unsigned long)READ_ONCE(min_free_mb) * SZ_1M / PAGE_SIZE)
 
 /* Kill up to this many victims per reclaim */
 #define MAX_VICTIMS 1024
@@ -498,3 +500,5 @@ static const struct kernel_param_ops simple_lmk_init_ops = {
 #undef MODULE_PARAM_PREFIX
 #define MODULE_PARAM_PREFIX "lowmemorykiller."
 module_param_cb(minfree, &simple_lmk_init_ops, NULL, 0200);
+module_param_named(min_free_mb, min_free_mb, uint, 0644);
+MODULE_PARM_DESC(min_free_mb, "Minimum memory to reclaim in MiB");
